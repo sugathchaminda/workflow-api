@@ -1,0 +1,81 @@
+{
+  "name": "qvalia-serverless-workflow-api",
+  "version": "1.0.8",
+  "description": "workflow backend",
+  "main": "handler.js",
+  "scripts": {
+    "offline": "node_modules/.bin/serverless offline --stage dev --ignoreJWTSignature",
+    "start": "node offline/index.js --offline",
+    "test": "node test/runTests",
+    "test:local": "APP_ENV=local node test/runTests ",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src test",
+    "lint:fix": "eslint src test --fix",
+    "deploy": "sls deploy --stage dev",
+    "deploy:test": "sls deploy --stage test",
+    "deploy:qa": "sls deploy --stage qa",
+    "deploy:prod": "sls deploy --stage prod"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Qvalia/qvalia-serverless-workflow-api.git"
+  },
+  "keywords": [
+    "serverless",
+    "workflow",
+    "backend",
+    "api"
+  ],
+  "author": "qvalia",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Qvalia/qvalia-serverless-workflow-api/issues"
+  },
+  "homepage": "https://github.com/Qvalia/qvalia-serverless-workflow-api#readme",
+  "devDependencies": {
+    "@hapi/hapi": "^19.2.0",
+    "eslint": "^7.5.0",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-jest": "^24.3.6",
+    "eslint-plugin-node": "^11.1.0",
+    "husky": "^4.2.5",
+    "jest": "^26.1.0",
+    "jest-cli": "^26.1.0",
+    "lint-staged": "^10.2.11",
+    "prettier": "^2.0.5",
+    "serverless": "^2.58.0",
+    "serverless-localstack": "^0.4.32",
+    "serverless-offline": "^8.2.0",
+    "serverless-offline-ssm": "^5.2.0",
+    "serverless-plugin-tracing": "^2.0.0",
+    "serverless-prune-plugin": "^1.6.0"
+  },
+  "dependencies": {
+    "@hapi/boom": "^9.1.0",
+    "@hapi/joi": "^15.1.1",
+    "@jest/globals": "^26.6.2",
+    "@sentry/node": "^5.20.1",
+    "aws-sdk": "^2.803.0",
+    "aws-xray-sdk": "^3.1.0",
+    "dotenv": "^8.2.0",
+    "faker": "^4.1.0",
+    "got": "^11.5.1",
+    "js-yaml": "^3.14.0",
+    "knex": "^0.21.5",
+    "lambda-api": "^0.11.1",
+    "lodash": "^4.17.15",
+    "node-xlsx": "^0.16.1",
+    "pg": "^8.3.0",
+    "range_check": "^2.0.4",
+    "uuid": "^8.3.1",
+    "winston": "^3.3.3",
+    "winston-aws-cloudwatch": "^3.0.0",
+    "winston-transport-sentry-node": "^0.6.0"
+  }
+}

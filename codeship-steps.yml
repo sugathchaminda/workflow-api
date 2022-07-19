@@ -1,0 +1,32 @@
+
+- type: serial
+  name: deploy-test
+  tag: test
+  steps:
+  - name: test
+    service: qvalia-serverless-workflow
+    command:  bash -c "sleep 50s && npm run lint && npm test"
+  - name: deploy-to-aws
+    service: deploy-test
+    command: ./node_modules/.bin/serverless deploy --stage test
+
+
+- type: serial
+  name: deploy-QA
+  tag: qualityassurance 
+  steps:
+  - name: test
+    service: qvalia-serverless-workflow
+    command:  bash -c "sleep 50s && npm run lint && npm test"  
+  - name: deploy-to-aws
+    service: deploy-qa
+    command: ./node_modules/.bin/serverless deploy --stage qa
+
+
+- type: serial
+  tag: development
+  name: on-commit-test
+  steps:
+  - name: test
+    service: qvalia-serverless-workflow
+    command:  bash -c "sleep 50s && npm run lint && npm test"

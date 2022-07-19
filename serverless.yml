@@ -1,0 +1,235 @@
+service: qvalia-workflow
+
+# variablesResolutionMode: 20210326
+plugins:
+  - serverless-offline-ssm
+  - serverless-offline
+  - serverless-prune-plugin
+  - serverless-plugin-tracing
+  - serverless-localstack
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: dev
+  region: eu-west-1
+  timeout: 29
+  # lambdaHashingVersion: 20201221
+  tracing:
+    apiGateway: true
+    lambda: true
+  httpApi:
+    authorizers:
+      authorizerFunc:
+        type: request
+        functionName: authorizerFunc
+        enableSimpleResponses: true
+        # payloadVersion: 2.0
+        identitySource:
+          - $request.header.Host
+        caching:
+            enabled: false
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - ssm:*
+        - logs:*
+        - xray:PutTraceSegments
+        - xray:PutTelemetryRecords
+        - sqs:*
+        - s3:*
+      Resource: "*"
+
+  vpc:
+    securityGroupIds:
+      - ${ssm:/${opt:stage, self:provider.stage}/lambda/common/VPC_SECURITY_GROUP_ID}
+    subnetIds:
+      - ${ssm:/${opt:stage, self:provider.stage}/lambda/common/VPC_SUBNET_ID1}
+      - ${ssm:/${opt:stage, self:provider.stage}/lambda/common/VPC_SUBNET_ID2}
+
+  environment:
+    LAMBDA_STAGE: ${ssm:/${opt:stage, self:provider.stage}/lambda/common/LAMBDA_STAGE}
+    ALLOWED_ORIGINS: ${ssm:/${opt:stage, self:provider.stage}/lambda/QVALIA_SERVERLESS_WORKFLOW_API/ALLOWED_ORIGINS}
+    REQUEST_LOG_GROUP_NAME: ${ssm:/${opt:stage, self:provider.stage}/lambda/QVALIA_SERVERLESS_WORKFLOW_API/REQUEST_LOG_GROUP_NAME}
+    ERROR_LOG_GROUP_NAME: ${ssm:/${opt:stage, self:provider.stage}/lambda/QVALIA_SERVERLESS_WORKFLOW_API/ERROR_LOG_GROUP_NAME}
+    CW_ACCESS_KEY_ID: ${ssm:/${opt:stage, self:provider.stage}/lambda/QVALIA_SERVERLESS_WORKFLOW_API/CW_ACCESS_KEY_ID}
+    CW_SECRET_ACCESS_KEY: ${ssm:/${opt:stage, self:provider.stage}/lambda/QVALIA_SERVERLESS_WORKFLOW_API/CW_SECRET_ACCESS_KEY}
+    CW_REGION: ${ssm:/${opt:stage, self:provider.stage}/lambda/QVALIA_SERVERLESS_WORKFLOW_API/CW_REGION}
+    SENTRY_DSN: ${ssm:/${opt:stage, self:provider.stage}/lambda/QVALIA_SERVERLESS_WORKFLOW_API/SENTRY_DSN}
+    AWS_XRAY_DEBUG_MODE: ${ssm:/${opt:stage, self:provider.stage}/lambda/QVALIA_SERVERLESS_WORKFLOW_API/AWS_XRAY_DEBUG_MODE}
+    AWS_XRAY_CONTEXT_MISSING: ${ssm:/${opt:stage, self:provider.stage}/lambda/QVALIA_SERVERLESS_WORKFLOW_API/AWS_XRAY_CONTEXT_MISSING}
+    AWS_INVOICE_ATTACHMENTS_BUCKET: ${ssm:/${opt:stage, self:provider.stage}/lambda/QVALIA_SERVERLESS_WORKFLOW_API/AWS_INVOICE_ATTACHMENTS_BUCKET}
+    PG_HOST: ${ssm:/${opt:stage, self:provider.stage}/lambda/common/PG_HOST}
+    PG_USER: ${ssm:/${opt:stage, self:provider.stage}/lambda/common/PG_USER}
+    PG_PASSWORD: ${ssm:/${opt:stage, self:provider.stage}/lambda/common/PG_PASSWORD}
+    PG_DATABASE: ${ssm:/${opt:stage, self:provider.stage}/lambda/common/PG_DATABASE}
+    PG_PORT: ${ssm:/${opt:stage, self:provider.stage}/lambda/common/PG_PORT}
+    QVALIA_QIP_HOST: ${ssm:/${opt:stage, self:provider.stage}/lambda/common/QVALIA_QIP_HOST}
+    CHART_OF_ACCOUNT_UPLOAD_BUCKET_NAME: ${opt:stage, self:provider.stage}-qvalia-workflow-upload-chart-of-account
+    AUTH_KEY: ${ssm:/${opt:stage, self:provider.stage}/lambda/common/AUTH_KEY}
+    IP_WHITELIST: ${ssm:/${opt:stage, self:provider.stage}/lambda/common/IP_WHITELIST}
+    SUBNET_WHITELIST: ${ssm:/${opt:stage, self:provider.stage}/lambda/common/SUBNET_WHITELIST}
+    AWS_ACCOUNT_ID: ${ssm:/${opt:stage, self:provider.stage}/lambda/common/ACCOUNT_ID}
+    API_ID: ${self:custom.apiId.${opt:stage}, self:custom.apiId.other}
+
+package:
+  individually: true
+  exclude:
+    - offline/**
+    - offline.yml
+
+custom:
+  prune:
+    automatic: true
+    number: 10
+  serverless-offline:
+    httpPort: 3001
+  localstack:
+    debug: true
+    stages:
+      - local
+  apiId:
+    dev: 'random-api-id'
+    other: !Ref HttpApi
+  serverless-offline-ssm:
+    stages:
+      - dev
+    ssm:
+      '/dev/lambda/common/LAMBDA_STAGE': dev
+      '/dev/lambda/common/AWS_REGION': eu-west-1
+      '/dev/lambda/common/QVALIA_QIP_HOST': http://localhost:1337
+      '/dev/lambda/common/QVALIA_QIP_API_ENDPOINT': http://localhost:1337/internal/v1
+      '/dev/lambda/common/QVALIA_PROXY_HOST': http://localhost:300040
+      '/dev/lambda/QVALIA_SERVERLESS_WORKFLOW_API/ALLOWED_ORIGINS':
+        - http://127.0.0.1:3001
+        - http://localhost:3001
+        - http://127.0.0.1:3000
+        - http://localhost:3000
+        - http://127.0.0.1:8080
+        - http://localhost:8080
+        - https://qipproxy-test.qvalia.com
+        - https://qipproxy-qa.qvalia.com
+        - https://qipproxy.qvalia.com
+        - https://beta.qvalia.com
+        - https://app-test.qvalia.com
+        - https://app-qa.qvalia.com
+        - https://app.qvalia.com
+      '/dev/lambda/QVALIA_SERVERLESS_WORKFLOW_API/CW_ACCESS_KEY_ID': <AWS_ID>
+      '/dev/lambda/QVALIA_SERVERLESS_WORKFLOW_API/CW_SECRET_ACCESS_KEY': <AWS_SECRET_KEY>
+      '/dev/lambda/QVALIA_SERVERLESS_WORKFLOW_API/CW_REGION': eu-west-1
+      '/dev/lambda/QVALIA_SERVERLESS_WORKFLOW_API/REQUEST_LOG_GROUP_NAME': serverless-workflow-request-logs
+      '/dev/lambda/QVALIA_SERVERLESS_WORKFLOW_API/ERROR_LOG_GROUP_NAME': serverless-workflow-error-logs
+      '/dev/lambda/QVALIA_SERVERLESS_WORKFLOW_API/SENTRY_DSN': <SENTRY_DSN_URL>
+      '/dev/lambda/common/PG_HOST': 'localhost'
+      '/dev/lambda/common/PG_USER': 'postgres'
+      '/dev/lambda/common/PG_PASSWORD': '123'
+      '/dev/lambda/common/PG_DATABASE': 'invoice_portal'
+      '/dev/lambda/common/PG_PORT': 5432
+      '/dev/lambda/common/VPC_SECURITY_GROUP_ID': <VPC>
+      '/dev/lambda/common/VPC_SUBNET_ID1': <SUB1>
+      '/dev/lambda/common/VPC_SUBNET_ID2': <SUB2>
+      '/dev/lambda/QVALIA_SERVERLESS_WORKFLOW_API/AWS_XRAY_DEBUG_MODE': true
+      '/dev/lambda/QVALIA_SERVERLESS_WORKFLOW_API/AWS_XRAY_CONTEXT_MISSING': LOG_ERROR
+      '/dev/lambda/QVALIA_SERVERLESS_WORKFLOW_API/AWS_INVOICE_ATTACHMENTS_BUCKET': qvalia.qip.test.store.file.invoice
+      '/dev/lambda/common/AUTH_KEY': <AuthKey>
+      '/dev/lambda/common/IP_WHITELIST': '127.0.0.1,::1,::ffff:127.0.0.1,52.19.145.98'
+      '/dev/lambda/common/SUBNET_WHITELIST': '192.168.0.0/16,172.51.0.0/16,0:0:0:0:0:ffff:c0a8:0/112,0:0:0:0:0:ffff:ac33:0/112'
+      '/dev/lambda/common/ACCOUNT_ID': random-account-id
+
+
+functions:
+  routes:
+    handler: src/handler.run
+    description: Routing event to correct internal function
+    events:
+      - httpApi:
+          path: /{proxy+} # will trigger the function for all routes
+          method: any
+          authorizer:
+            name: authorizerFunc
+            type: request
+
+  uploadChartOfAccounts:
+    handler: src/api/accounting/accountingController.processChartOfAccounts
+    description: Upload Chart Of Accounts file
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - ChartOfAccountUploadEventQueue
+              - Arn
+          batchSize: 1
+
+  authorizerFunc:
+    handler: src/handler.auth
+
+resources:
+  Resources:
+    RequestLogs:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: ${ssm:/${opt:stage, self:provider.stage}/lambda/QVALIA_SERVERLESS_WORKFLOW_API/REQUEST_LOG_GROUP_NAME}
+    ErrorLogs:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: ${ssm:/${opt:stage, self:provider.stage}/lambda/QVALIA_SERVERLESS_WORKFLOW_API/ERROR_LOG_GROUP_NAME}
+    ChartOfAccountUploadEventDLQ:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: "${opt:stage, self:provider.stage}-chart-of-account-workflow-dlq"
+    ChartOfAccountUploadEventQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: "${opt:stage, self:provider.stage}-chart-of-account-workflow"
+        RedrivePolicy:
+          deadLetterTargetArn:
+            Fn::GetAtt:
+              - ChartOfAccountUploadEventDLQ
+              - Arn
+          maxReceiveCount: 5
+    ChartOfAccountUploadSQSPolicy:
+      Type: 'AWS::SQS::QueuePolicy'
+      DependsOn:
+        - 'ChartOfAccountUploadEventQueue'
+      Properties:
+        PolicyDocument:
+          Statement:
+            - Effect: Allow
+              Principal: "*"
+              Resource: "*"
+              Condition:
+                ArnLike:
+                  aws:SourceArn: "arn:aws:s3:::*"
+              Action: 'SQS:*'
+        Queues:
+          - Ref: "ChartOfAccountUploadEventQueue"
+    ChartOfAccountUploadBucket:
+      Type: "AWS::S3::Bucket"
+      Properties:
+        BucketName: ${self:provider.environment.CHART_OF_ACCOUNT_UPLOAD_BUCKET_NAME}
+        NotificationConfiguration:
+          QueueConfigurations:
+            - Event: s3:ObjectCreated:Put
+              Queue: !GetAtt ChartOfAccountUploadEventQueue.Arn
+        AccessControl: Private
+        CorsConfiguration:
+          CorsRules:
+            - AllowedMethods:
+                - PUT
+                - GET
+              AllowedOrigins:
+                - 'https://beta.qvalia.com'
+                - 'https://app-test.qvalia.com'
+                - 'https://app-qa.qvalia.com'
+                - 'https://app.qvalia.com'
+              AllowedHeaders:
+                - '*'
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+      DependsOn:
+        - ChartOfAccountUploadEventQueue
+        - ChartOfAccountUploadSQSPolicy

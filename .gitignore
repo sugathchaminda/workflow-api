@@ -1,0 +1,36 @@
+#editor directories
+.vscode
+
+# package directories
+node_modules
+jspm_packages
+
+# Serverless directories
+.serverless
+
+# Test
+coverage
+
+# Local Log files
+logs
+
+# config files with credentials
+offline.yml
+
+# test env local config
+test/testEnv.local
+
+test/api/.DS_Store
+
+# codeship encyption key
+codeship.aes
+
+#codeship dockercfg credentials
+dockercfg
+
+# credentials
+credentials.env
+aws.env.test
+aws.env.qa
+
+.DS_STORE

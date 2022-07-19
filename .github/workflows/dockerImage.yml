@@ -1,0 +1,27 @@
+name: Worfkow-API Docker Image CI
+
+env:
+  CONTAINER_IMAGE_NAME: "qvalia/workflow-api:latest"
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_REGISTRY: ghcr.io
+  
+
+on:
+  push:
+    branches: [ development ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Docker Registry
+        env:
+          DOCKER_ACCESS_TOKEN: ${{ secrets.CR_PAT }}
+        run: docker login -u $DOCKER_USERNAME -p $DOCKER_ACCESS_TOKEN $DOCKER_REGISTRY
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag $DOCKER_REGISTRY/$CONTAINER_IMAGE_NAME
+        
+      - name: Push Docker Image to Registry
+        run: docker push $DOCKER_REGISTRY/$CONTAINER_IMAGE_NAME

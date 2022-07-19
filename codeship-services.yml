@@ -1,0 +1,74 @@
+qvalia-db:
+  image: postgres:13
+  container_name: qvalia-db
+  environment:
+    - POSTGRES_DB=qvalia-development
+    - POSTGRES_USERNAME=postgres
+    - POSTGRES_PASSWORD=qvalia-test!!2
+  ports:
+    - 5432
+
+qvalia-backend:
+  encrypted_dockercfg_path: dockercfg.encrypted
+  image: ghcr.io/qvalia/qvalia-backend:latest
+  environment:
+    - DATABASE_HOST=qvalia-db
+    - DATABASE_USER=postgres
+    - DATABASE_PASSWORD=qvalia-test!!2
+    - DATABASE_NAME=qvalia-development
+    - DATABASE_PORT=5432
+  ports:
+    - 1337
+  depends_on: 
+    - qvalia-db
+  command: bash -c "sleep 10s && npm run migrate && npm run seed && node app.js"
+
+  
+qvalia-serverless-workflow:   
+  build: .
+  dockerfile: Dockerfile
+  container_name: qvalia-serverless-workflow
+  working_dir: /var/workspace
+  environment:
+    - PG_HOST=qvalia-db
+    - PG_USER=postgres
+    - PG_PASSWORD=qvalia-test!!2
+    - PG_DATABASE=qvalia-development
+    - PG_PORT=5432
+    - NODE_ENV=dev
+    - LAMBDA_STAGE=dev
+    - QVALIA_PROXY_HOST=http://qvalia-serverless-proxy:3000
+    - QVALIA_QIP_HOST=http://qvalia-backend:1337
+    - QVALIA_QIP_API_ENDPOINT=http://qvalia-backend:1337/internal/v1
+  ports:
+    - 3001
+  # volumes:
+  #   - ../qvalia-serverless-workflow:/var/workspace
+  #   - /var/workspace/node_modules
+  depends_on:
+    - qvalia-db
+    - qvalia-backend
+  command: bash -c "sleep 60s && npm test"
+
+
+deploy-test:
+  build:
+    image: qvalia-serverless-workflow
+    dockerfile: Dockerfile
+  encrypted_env_file:
+    - aws.env.test.encrypted
+  environment:
+    - AWS_DEFAULT_REGION=eu-west-1
+  volumes:
+    - ./dist:/usr/app/dist
+
+deploy-qa:
+  build:
+    image: qvalia-serverless-workflow
+    dockerfile: Dockerfile
+  encrypted_env_file:
+    - aws.env.qa.encrypted
+  environment:
+    - AWS_DEFAULT_REGION=eu-west-1
+  volumes:
+    - ./dist:/usr/app/dist

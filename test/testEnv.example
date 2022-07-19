@@ -1,0 +1,9 @@
+PG_HOST=localhost
+PG_USER=root
+PG_PASSWORD=root
+PG_DATABASE=qip_test_db
+PG_PORT=5432
+LAMBDA_STAGE=dev
+QVALIA_QIP_HOST=http://localhost:1337
+QVALIA_QIP_API_ENDPOINT=http://localhost:1337/internal/v1
+QVALIA_PROXY_HOST=http://localhost:3000

@@ -1,0 +1,57 @@
+version: "3.7"
+services:
+  qvalia-db:
+    image: postgres:13
+    container_name: qvalia-db
+    environment:
+      - POSTGRES_DB=qvalia-development
+      - POSTGRES_USERNAME=postgres
+      - POSTGRES_PASSWORD=qvalia-test!!2
+    ports:
+      - 5432
+    # volumes:
+    #   - ~/ddata/qvalia/db:/var/lib/postgresql/data
+    networks:
+      - qvalianet
+
+  qvalia-backend:
+    image: qvalia-invoice-portal-backend-local-build
+    # image: qvalia-invoice-portal
+    environment:
+      - DATABASE_HOST=qvalia-db
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=qvalia-test!!2
+      - DATABASE_NAME=qvalia-development
+      - DATABASE_PORT=5432
+    ports:
+      - 1337
+    networks:
+      - qvalianet
+    depends_on:
+      - qvalia-db
+    command: bash -c "sleep 10s && npm run migrate && npm run seed && node app.js"
+  
+  qvalia-serverless-workflow:
+    build: .
+    container_name: qvalia-serverless-workflow
+    working_dir: /var/workspace
+    environment:
+      - PG_HOST=qvalia-db
+      - PG_USER=postgres
+      - PG_PASSWORD=qvalia-test!!2
+      - PG_DATABASE=qvalia-development
+      - PG_PORT=5432
+      - QVALIA_PROXY_HOST=http://qvalia-serverless-proxy:3000
+      - QVALIA_QIP_HOST=http://qvalia-backend:1337
+    ports:
+      - 3001
+    networks:
+      - qvalianet
+    depends_on:
+      - qvalia-db
+      - qvalia-backend
+    command: bash -c "sleep 30s && npm run test"
+
+networks:
+  qvalianet:
+    external: true
